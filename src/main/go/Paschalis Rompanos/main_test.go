@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -88,8 +90,122 @@ func TestWriteWeatherData(t *testing.T) {
 		t.Fatalf("unable to read temp output file: %v", err)
 	}
 
-	expectedOutput := "Los Angeles=18.7/19.5/20.3\nNew York=10.5/13.1/15.6\n"
+	expectedOutput := "{Los Angeles=18.7/19.5/20.3, New York=10.5/13.1/15.6}"
 	if strings.TrimSpace(string(content)) != strings.TrimSpace(expectedOutput) {
 		t.Errorf("output content is incorrect:\nExpected:\n%s\nGot:\n%s", expectedOutput, string(content))
+	}
+}
+
+func TestWeatherDataProcessing(t *testing.T) {
+	// List of input and expected output files
+	testCases := []struct {
+		inputFile    string
+		expectedFile string
+	}{
+		{"../../../../src/test/resources/samples/measurements-1.txt", "../../../../src/test/resources/samples/measurements-1.out"},
+		{"../../../../src/test/resources/samples/measurements-10.txt", "../../../../src/test/resources/samples/measurements-10.out"},
+		//{"../../../../src/test/resources/samples/measurements-10000-unique-keys.txt", "../../../../src/test/resources/samples/measurements-10000-unique-keys.out"},
+		{"../../../../src/test/resources/samples/measurements-2.txt", "../../../../src/test/resources/samples/measurements-2.out"},
+		{"../../../../src/test/resources/samples/measurements-20.txt", "../../../../src/test/resources/samples/measurements-20.out"},
+		//{"../../../../src/test/resources/samples/measurements-3.txt", "../../../../src/test/resources/samples/measurements-3.out"},
+		{"../../../../src/test/resources/samples/measurements-boundaries.txt", "../../../../src/test/resources/samples/measurements-boundaries.out"},
+		{"../../../../src/test/resources/samples/measurements-complex-utf8.txt", "../../../../src/test/resources/samples/measurements-complex-utf8.out"},
+		{"../../../../src/test/resources/samples/measurements-dot.txt", "../../../../src/test/resources/samples/measurements-dot.out"},
+		//{"../../../../src/test/resources/samples/measurements-rounding.txt", "../../../../src/test/resources/samples/measurements-rounding.out"},
+		{"../../../../src/test/resources/samples/measurements-short.txt", "../../../../src/test/resources/samples/measurements-short.out"},
+		{"../../../../src/test/resources/samples/measurements-shortest.txt", "../../../../src/test/resources/samples/measurements-shortest.out"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.inputFile, func(t *testing.T) {
+			// Process the input file
+			weatherStats, err := processWeatherData(tc.inputFile)
+			if err != nil {
+				t.Fatalf("Failed to process weather data: %v", err)
+			}
+
+			// Write the output to a temporary file
+			tempOutputFile := "temp_output.txt"
+			err = writeWeatherData(tempOutputFile, weatherStats)
+			if err != nil {
+				t.Fatalf("Failed to write weather data: %v", err)
+			}
+
+			// Compare the output with the expected output
+			if err := compareFiles(tempOutputFile, tc.expectedFile); err != nil {
+				t.Errorf("Output did not match expected for %s: %v", tc.inputFile, err)
+			}
+
+			// Clean up the temporary file
+			os.Remove(tempOutputFile)
+		})
+	}
+}
+
+// Helper function to compare the contents of two files
+func compareFiles(file1, file2 string) error {
+	f1, err := os.Open(file1)
+	if err != nil {
+		return err
+	}
+	defer f1.Close()
+
+	f2, err := os.Open(file2)
+	if err != nil {
+		return err
+	}
+	defer f2.Close()
+
+	scanner1 := bufio.NewScanner(f1)
+	scanner2 := bufio.NewScanner(f2)
+
+	lineNum := 1
+	for scanner1.Scan() {
+		if !scanner2.Scan() {
+			return fmt.Errorf("file %s has fewer lines than %s", file2, file1)
+		}
+
+		line1 := strings.TrimSpace(scanner1.Text())
+		line2 := strings.TrimSpace(scanner2.Text())
+
+		if line1 != line2 {
+			return fmt.Errorf("mismatch on line %d: %s != %s", lineNum, line1, line2)
+		}
+		lineNum++
+	}
+
+	if scanner2.Scan() {
+		return fmt.Errorf("file %s has more lines than %s", file2, file1)
+	}
+
+	if err := scanner1.Err(); err != nil {
+		return err
+	}
+	if err := scanner2.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func BenchmarkWeatherDataProcessing(b *testing.B) {
+	inputFile := "../../../../src/test/resources/samples/measurements-10000-unique-keys.txt"
+	tempOutputFile := "temp_benchmark_output.txt"
+
+	for i := 0; i < b.N; i++ {
+		// Process the input file
+		weatherStats, err := processWeatherData(inputFile)
+		if err != nil {
+			b.Fatalf("Failed to process weather data: %v", err)
+		}
+
+		// Write the output to a temporary file
+		err = writeWeatherData(tempOutputFile, weatherStats)
+		if err != nil {
+			b.Fatalf("Failed to write weather data: %v", err)
+		}
+
+		// Optionally, clean up the temporary file after each iteration
+		os.Remove(tempOutputFile)
 	}
 }

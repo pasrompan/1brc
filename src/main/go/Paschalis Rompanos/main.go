@@ -18,7 +18,10 @@ type WeatherData struct {
 func main() {
 	start := time.Now()
 
-	weatherStats, err := processWeatherData("../../../../data/weather_stations.csv")
+	const filename = "../../../../src/test/resources/samples/measurements-10000-unique-keys.txt"
+	//const filename = "../../../../data/weather_stations.csv"
+
+	weatherStats, err := processWeatherData(filename)
 	if err != nil {
 		fmt.Println("Error processing weather data:", err)
 		return
@@ -105,12 +108,18 @@ func writeWeatherData(outputPath string, weatherStats map[string]*WeatherData) e
 	}
 	sort.Strings(cities)
 
-	for _, city := range cities {
+	var result string
+	for i, city := range cities {
 		data := weatherStats[city]
 		data.mean = data.sum / float64(data.count)
-		result := fmt.Sprintf("%s=%.1f/%.1f/%.1f", city, data.min, data.mean, data.max)
-		writer.WriteString(result + "\n")
+		if i == 0 {
+			result = fmt.Sprintf("{%s=%.1f/%.1f/%.1f", city, data.min, data.mean, data.max)
+		} else {
+			result += fmt.Sprintf(", %s=%.1f/%.1f/%.1f", city, data.min, data.mean, data.max)
+		}
 	}
+	result += "}"
+	writer.WriteString(result + "\n")
 
 	return nil
 }

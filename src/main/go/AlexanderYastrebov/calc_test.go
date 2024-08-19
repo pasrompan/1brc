@@ -63,7 +63,7 @@ func BenchmarkParseNumber(b *testing.B) {
 func BenchmarkProcess(b *testing.B) {
 	// $ ./create_measurements.sh 1000000 && mv measurements.txt measurements-1e6.txt
 	// Created file with 1,000,000 measurements in 514 ms
-	const filename = "../../../../measurements-1e6.txt"
+	const filename = "../../../../src/test/resources/samples/measurements-10000-unique-keys.txt"
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
