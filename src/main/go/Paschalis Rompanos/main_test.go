@@ -107,11 +107,11 @@ func TestWeatherDataProcessing(t *testing.T) {
 		//{"../../../../src/test/resources/samples/measurements-10000-unique-keys.txt", "../../../../src/test/resources/samples/measurements-10000-unique-keys.out"},
 		{"../../../../src/test/resources/samples/measurements-2.txt", "../../../../src/test/resources/samples/measurements-2.out"},
 		{"../../../../src/test/resources/samples/measurements-20.txt", "../../../../src/test/resources/samples/measurements-20.out"},
-		//{"../../../../src/test/resources/samples/measurements-3.txt", "../../../../src/test/resources/samples/measurements-3.out"},
+		{"../../../../src/test/resources/samples/measurements-3.txt", "../../../../src/test/resources/samples/measurements-3.out"},
 		{"../../../../src/test/resources/samples/measurements-boundaries.txt", "../../../../src/test/resources/samples/measurements-boundaries.out"},
 		{"../../../../src/test/resources/samples/measurements-complex-utf8.txt", "../../../../src/test/resources/samples/measurements-complex-utf8.out"},
 		{"../../../../src/test/resources/samples/measurements-dot.txt", "../../../../src/test/resources/samples/measurements-dot.out"},
-		//{"../../../../src/test/resources/samples/measurements-rounding.txt", "../../../../src/test/resources/samples/measurements-rounding.out"},
+		{"../../../../src/test/resources/samples/measurements-rounding.txt", "../../../../src/test/resources/samples/measurements-rounding.out"},
 		{"../../../../src/test/resources/samples/measurements-short.txt", "../../../../src/test/resources/samples/measurements-short.out"},
 		{"../../../../src/test/resources/samples/measurements-shortest.txt", "../../../../src/test/resources/samples/measurements-shortest.out"},
 	}

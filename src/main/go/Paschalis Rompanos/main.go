@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -18,7 +19,7 @@ type WeatherData struct {
 func main() {
 	start := time.Now()
 
-	const filename = "../../../../src/test/resources/samples/measurements-10000-unique-keys.txt"
+	const filename = "../../../../measurements_big.txt"
 	//const filename = "../../../../data/weather_stations.csv"
 
 	weatherStats, err := processWeatherData(filename)
@@ -52,37 +53,32 @@ func processWeatherData(filePath string) (map[string]*WeatherData, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.Split(line, ";")
-		if len(parts) != 2 {
+		city, tempStr, hasSemi := strings.Cut(line, ";")
+		if !hasSemi {
 			fmt.Println("Invalid line format:", line)
 			continue
 		}
-
-		city := parts[0]
-		temp, err := strconv.ParseFloat(parts[1], 64)
+		temp, err := strconv.ParseFloat(tempStr, 64)
 		if err != nil {
 			fmt.Println("Error parsing temperature:", err)
 			continue
 		}
 
-		if _, exists := weatherStats[city]; !exists {
-			weatherStats[city] = &WeatherData{
+		s := weatherStats[city]
+		if s == nil {
+			s = &WeatherData{
 				min:   temp,
 				max:   temp,
 				sum:   temp,
 				count: 1,
 			}
 		} else {
-			data := weatherStats[city]
-			if temp < data.min {
-				data.min = temp
-			}
-			if temp > data.max {
-				data.max = temp
-			}
-			data.sum += temp
-			data.count++
+			s.min = min(s.min, temp)
+			s.max = max(s.max, temp)
+			s.sum += temp
+			s.count++
 		}
+		weatherStats[city] = s
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -111,7 +107,7 @@ func writeWeatherData(outputPath string, weatherStats map[string]*WeatherData) e
 	var result string
 	for i, city := range cities {
 		data := weatherStats[city]
-		data.mean = data.sum / float64(data.count)
+		data.mean = math.Ceil(data.sum/float64(data.count)*10) / 10
 		if i == 0 {
 			result = fmt.Sprintf("{%s=%.1f/%.1f/%.1f", city, data.min, data.mean, data.max)
 		} else {
