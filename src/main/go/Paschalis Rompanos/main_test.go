@@ -209,3 +209,58 @@ func BenchmarkWeatherDataProcessing(b *testing.B) {
 		os.Remove(tempOutputFile)
 	}
 }
+
+func TestProcessPart(t *testing.T) {
+	// Create a temporary file with test data
+	tempFile, err := os.CreateTemp("", "test_weather_data_*.txt")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	testData := []byte("City1;10.5\nCity2;20.3\nCity1;15.7\nCity2;18.9\n")
+	if _, err := tempFile.Write(testData); err != nil {
+		t.Fatalf("Failed to write test data: %v", err)
+	}
+	tempFile.Close()
+
+	// Create a channel to receive results
+	resultsCh := make(chan map[string]*WeatherData, 1)
+
+	// Call processPart
+	go processPart(tempFile.Name(), 0, int64(len(testData)), resultsCh)
+
+	// Receive results
+	result := <-resultsCh
+
+	// Check results
+	expectedResult := map[string]*WeatherData{
+		"City1": {min: 10.5, max: 15.7, sum: 26.2, count: 2},
+		"City2": {min: 18.9, max: 20.3, sum: 39.2, count: 2},
+	}
+
+	if len(result) != len(expectedResult) {
+		t.Errorf("Expected %d cities, got %d", len(expectedResult), len(result))
+	}
+
+	for city, expected := range expectedResult {
+		actual, ok := result[city]
+		if !ok {
+			t.Errorf("Expected data for %s, but not found", city)
+			continue
+		}
+
+		if actual.min != expected.min {
+			t.Errorf("For %s, expected min %.1f, got %.1f", city, expected.min, actual.min)
+		}
+		if actual.max != expected.max {
+			t.Errorf("For %s, expected max %.1f, got %.1f", city, expected.max, actual.max)
+		}
+		if actual.sum != expected.sum {
+			t.Errorf("For %s, expected sum %.1f, got %.1f", city, expected.sum, actual.sum)
+		}
+		if actual.count != expected.count {
+			t.Errorf("For %s, expected count %d, got %d", city, expected.count, actual.count)
+		}
+	}
+}
